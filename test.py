@@ -1,7 +1,7 @@
 from model.model import Model
 
 myModel = Model()
-myModel.build_graph("Germany", "2016")
+myModel.build_graph("France", "2015")
 print(myModel.info_grafo())
 
 myModel.calcola_volumi()

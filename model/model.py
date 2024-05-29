@@ -13,7 +13,6 @@ class Model:
         self._grafo = nx.Graph()
         self._idMap = {}
 
-
     def build_graph(self, country, anno):
         self._list_retailers = DAO.get_reatiler_country(country)
         for r in self._list_retailers:
@@ -25,7 +24,8 @@ class Model:
                     archi = DAO.get_archi(r1.Retailer_code, r2.Retailer_code, anno)
                     if len(archi) != 0:
                         for a in archi:
-                            self._grafo.add_edge(self._idMap[a["R1"]], self._idMap[a["R2"]], weight=a["NumProdInComune"])
+                            self._grafo.add_edge(self._idMap[a["R1"]], self._idMap[a["R2"]],
+                                                 weight=a["NumProdInComune"])
 
     def calcola_volumi(self):
         for retailer in self._grafo.nodes:
@@ -47,47 +47,48 @@ class Model:
 
         comp_conn = nx.connected_components(self._grafo)
         list_comp_conn = list(comp_conn)
-      #  print(list_comp_conn)
+        # print(list_comp_conn)
         self._best_soluzione = []
         for c in list_comp_conn:
-            if len(c) > 1:
-                n = list(c)[0]
-                self._ricorsione(n, [], 0)
+            # print(list(c))
+            if len(c) > 2:
+                for n in c:
+                    self._ricorsione(n, [], 0)
+                # chiamo la ricorsione per tutte le componenti connesse con lunghezza maggiore di 2 (almeno 2 archi)
 
         print(self._best_soluzione)
-
+        print(self._pesoMax)
+        return self._pesoMax, self._best_soluzione
 
     def _ricorsione(self, nodo, parziale, peso_parziale):
-        if len(parziale) > self._num_archi:
-            return
-        if len(parziale) > 2:
-            if parziale[0][0] == parziale[-1][0]:
-                if len(parziale) == self._num_archi and peso_parziale > self._pesoMax:
-                    self._best_soluzione.append(copy.deepcopy(parziale))
+        # ho già controllato che len parziale non superi num_archi
+        if len(parziale) == self._num_archi:
+            if parziale[0][0] == parziale[-1][1] and peso_parziale > self._pesoMax:
+                print(f"Found a valid cycle with new max weight: {peso_parziale} -> {parziale}")
+                self._pesoMax = peso_parziale
+                self._best_soluzione = copy.deepcopy(parziale)
         vicini = self._grafo.neighbors(nodo)
         for v in vicini:
             peso_arco = self._grafo[nodo][v]["weight"]
-            if len(parziale) == self._num_archi - 1:
-                if self.filtro(nodo, v, parziale) == True and peso_parziale + peso_arco >= self._pesoMax:
-                    peso_parziale += peso_arco
+        #    if peso_parziale + peso_arco > self._pesoMax:      # è sbagliato controllare già qui pesoMax (parziale è più corto di quanto deve essere)
+            if len(parziale) < self._num_archi:
+                    if self.filtro(v, parziale):
+                        parziale.append((nodo, v, peso_arco))  # in parziale metto l'arco: (u, v, peso)
+                        self._ricorsione(v, parziale, peso_parziale + peso_arco)
+                        parziale.pop()
+            if len(parziale) == self._num_archi - 1:  # il primo nodo deve essere uguale all'ultimo (è un ciclo) quindi non passo dal filtro
+                if peso_parziale + peso_arco > self._pesoMax:
                     parziale.append((nodo, v, peso_parziale))
-                    self._ricorsione(nodo, parziale, peso_parziale)
+                    if parziale[0][0] == parziale[-1][1]:
+                        self._ricorsione(nodo, parziale, peso_parziale + peso_arco)
                     parziale.pop()
-            else:          # il primo nodo deve essere uguale all'ultimo (è un ciclo)
-                parziale.append((nodo, v, peso_parziale))
-                self._ricorsione(nodo, parziale, peso_parziale)
-                parziale.pop()
 
-
-    def filtro(self, nodo, n, parziale):
+    def filtro(self, nodo, parziale):
         for arco in parziale:
-            if arco[:2] == (nodo, n) or arco[:2] == (n, nodo):  ## se i nodi dell'arco sono quelli passati return True (se parziale contiene già i nodi passati --> False)
+            if arco[0] == nodo or arco[1] == nodo:
+                ## se un nodo dell'arco non è quello passato return True (se parziale contiene già un nodo passato --> False)
                 return False
         return True
-
-
-
-
 
     def info_grafo(self):
         return f"Il grafo ha {len(self._grafo.nodes)} nodi e {len(self._grafo.edges)} archi"

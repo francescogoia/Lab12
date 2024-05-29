@@ -47,4 +47,9 @@ class Controller:
         except ValueError:
             self._view.txtOut3.controls.append(ft.Text(f"Inserire un numero intero maggiore di 2"))
 
-        self._model.calcola_percorso(int_num_archi)
+        best_peso, best_percorso = self._model.calcola_percorso(int_num_archi)
+        self._view.txtOut3.controls.append(ft.Text(f"Peso cammino massimo: {best_peso}"))
+        for i in best_percorso:
+            self._view.txtOut3.controls.append(ft.Text(f"{i[0]} --> {i[1]}: {i[2]}"))
+
+        self._view.update_page()

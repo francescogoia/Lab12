@@ -9,7 +9,7 @@ class Retailer:
 
 
     def __repr__(self):
-        return f"{self.Retailer_code}-{self.Retailer_name}"
+        return f"{self.Retailer_code}-{self.Retailer_name}-{self.volume}"
 
     def __hash__(self):
         return hash(self.Retailer_code)
